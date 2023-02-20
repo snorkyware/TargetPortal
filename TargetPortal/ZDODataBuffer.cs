@@ -1,40 +1,41 @@
 ﻿using System.Collections.Generic;
 using HarmonyLib;
 
-namespace TargetPortal;
-
-public static class ZDODataBuffer
+namespace TargetPortal
 {
-	private static readonly List<ZPackage> packageBuffer = new();
-
-	[HarmonyPatch(typeof(ZNet), nameof(ZNet.OnNewConnection))]
-	private class StartBufferingOnNewConnection
+	public static class ZDODataBuffer
 	{
-		private static void Postfix(ZNet __instance, ZNetPeer peer)
+		private static readonly List<ZPackage> packageBuffer = new();
+	
+		[HarmonyPatch(typeof(ZNet), nameof(ZNet.OnNewConnection))]
+		private class StartBufferingOnNewConnection
 		{
-			if (!__instance.IsServer())
+			private static void Postfix(ZNet __instance, ZNetPeer peer)
 			{
-				peer.m_rpc.Register<ZPackage>("ZDOData", (_, package) => packageBuffer.Add(package));
+				if (!__instance.IsServer())
+				{
+					peer.m_rpc.Register<ZPackage>("ZDOData", (_, package) => packageBuffer.Add(package));
+				}
 			}
 		}
-	}
-
-	[HarmonyPatch(typeof(ZNet), nameof(ZNet.Shutdown))]
-	private class ClearPackageBufferOnShutdown
-	{
-		private static void Postfix() => packageBuffer.Clear();
-	}
-
-	[HarmonyPatch(typeof(ZDOMan), nameof(ZDOMan.AddPeer))]
-	private class EvaluateBufferedPackages
-	{
-		private static void Postfix(ZDOMan __instance, ZNetPeer netPeer)
+	
+		[HarmonyPatch(typeof(ZNet), nameof(ZNet.Shutdown))]
+		private class ClearPackageBufferOnShutdown
 		{
-			foreach (ZPackage package in packageBuffer)
+			private static void Postfix() => packageBuffer.Clear();
+		}
+	
+		[HarmonyPatch(typeof(ZDOMan), nameof(ZDOMan.AddPeer))]
+		private class EvaluateBufferedPackages
+		{
+			private static void Postfix(ZDOMan __instance, ZNetPeer netPeer)
 			{
-				__instance.RPC_ZDOData(netPeer.m_rpc, package);
+				foreach (ZPackage package in packageBuffer)
+				{
+					__instance.RPC_ZDOData(netPeer.m_rpc, package);
+				}
+				packageBuffer.Clear();
 			}
-			packageBuffer.Clear();
 		}
 	}
 }

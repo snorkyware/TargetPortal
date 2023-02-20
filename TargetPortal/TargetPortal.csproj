@@ -34,7 +34,7 @@
         <ErrorReport>prompt</ErrorReport>
         <WarningLevel>4</WarningLevel>
     </PropertyGroup>
-    <Choose>
+    <!--<Choose>
         <When Condition="($(OS) == 'Unix' OR $(OS) == 'OSX') AND $(GamePath) == ''">
             <PropertyGroup>
                 <GamePath Condition="!Exists('$(GamePath)')">$(HOME)/.steam/steam/steamapps/common/Valheim</GamePath>
@@ -50,7 +50,7 @@
                 <GamePath Condition="!Exists('$(GamePath)')">C:\Program Files (x86)\Steam\steamapps\common\Valheim</GamePath>
             </PropertyGroup>
         </When>
-    </Choose>
+    </Choose>-->
     <ItemGroup>
         <Reference Include="0Harmony, Version=2.9.0.0, Culture=neutral, PublicKeyToken=null">
             <HintPath>$(GamePath)\BepInEx\core\0Harmony.dll</HintPath>
@@ -131,7 +131,8 @@
     <Target Name="AfterBuild">
     </Target>
     -->
-    <Target Name="Copy" AfterTargets="ILRepack">
-        <Exec Command="copy /Y &quot;$(TargetDir)$(AssemblyName).dll&quot; &quot;$(GamePath)\BepInEx\plugins\$(AssemblyName).dll&quot;" />
+    <Target Name="Copy" AfterTargets="Build">
+        <Copy SourceFiles="$(TargetDir)$(ProjectName).dll" DestinationFolder="$(GamePath)/BepInEx/plugins" />
+        <Message Text="Copied to $(GamePath)/BepInEx/plugins" Importance="High" />
     </Target>
 </Project>
