@@ -12,6 +12,7 @@ namespace TargetPortal
 	{
 		public static bool Teleporting;
 		private static readonly Dictionary<Minimap.PinData, ZDO> activePins = new();
+		private static bool[]? _visibleIconTypes;
 
 		[HarmonyPatch(typeof(TeleportWorldTrigger), nameof(TeleportWorldTrigger.OnTriggerEnter))]
 		private class OpenMapOnPortalEnter
@@ -37,8 +38,23 @@ namespace TargetPortal
 					}
 				}
 
+				if (_visibleIconTypes == null)
+				{
+					int l = Minimap.instance.m_visibleIconTypes.Length - 1;
+					_visibleIconTypes = new bool[l];
+					Array.Copy(Minimap.instance.m_visibleIconTypes, _visibleIconTypes, l);
+					ToggleIconFilters();
+				}
+
 				return false;
 			}
+		}
+
+		private static void ToggleIconFilters()
+		{
+			if (_visibleIconTypes == null) return;
+			for (int i = 0, l = _visibleIconTypes.Length; i < l; i++)
+				if(_visibleIconTypes[i]) Minimap.instance.ToggleIconFilter((Minimap.PinType)i);
 		}
 
 		public static void CancelTeleport()
@@ -50,6 +66,9 @@ namespace TargetPortal
 				Minimap.instance.RemovePin(pinData);
 			}
 			activePins.Clear();
+			
+			ToggleIconFilters();
+			_visibleIconTypes = null;
 		}
 		
 		[HarmonyPatch(typeof(Minimap))]
