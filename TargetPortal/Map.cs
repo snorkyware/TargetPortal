@@ -51,6 +51,45 @@ namespace TargetPortal
 			}
 			activePins.Clear();
 		}
+		
+		[HarmonyPatch(typeof(Minimap))]
+		private class MinimapPatch
+		{
+			[HarmonyPrefix, HarmonyPatch(nameof(Minimap.UpdateMap))]
+			private static bool UpdateMapPrefix()
+			{
+				if (!Teleporting) return true;
+
+				if (ZInput.GetButtonDown("JoyButtonA"))
+				{
+					HandlePortalClick();
+					return false;
+				}
+
+				if (ZInput.GetButtonDown("JoyDPadUp") || 
+					ZInput.GetButtonDown("JoyDPadDown") || 
+					ZInput.GetButtonDown("JoyDPadRight") ||
+					ZInput.GetButtonDown("JoyTabRight") ||
+					ZInput.GetButtonDown("JoyTabLeft")) return false;
+
+				return true;
+			}
+		}
+
+		public static Minimap.PinData? GetClosestPin()
+		{
+			Vector3 pos = ZInput.IsGamepadActive() 
+				? new Vector3(Screen.width / 2f, Screen.height / 2f)
+				: Input.mousePosition;
+			pos = Minimap.instance.ScreenToWorldPoint(pos);
+
+			Minimap mm = Minimap.instance;
+			foreach (Minimap.PinData pinData in activePins.Keys) pinData.m_save = true;
+			Minimap.PinData pin = mm.GetClosestPin(pos, mm.m_removeRadius * (mm.m_largeZoom * 2f));
+			foreach (Minimap.PinData pinData in activePins.Keys) pinData.m_save = false;
+
+			return pin;
+		}
 
 		private static void HandlePortalClick()
 		{
@@ -60,18 +99,8 @@ namespace TargetPortal
 				return;
 			}
 
-			foreach (Minimap.PinData pinData in activePins.Keys)
-			{
-				pinData.m_save = true;
-			}
-
 			Minimap Minimap = Minimap.instance;
-			Minimap.PinData? closestPin = Minimap.GetClosestPin(Minimap.ScreenToWorldPoint(Input.mousePosition), Minimap.m_removeRadius * (Minimap.m_largeZoom * 2f));
-
-			foreach (Minimap.PinData pinData in activePins.Keys)
-			{
-				pinData.m_save = false;
-			}
+			Minimap.PinData? closestPin = GetClosestPin();
 
 			if (closestPin is null)
 			{
